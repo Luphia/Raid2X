@@ -201,20 +201,13 @@ Raid2X.prototype.setHash = function(hash) {
 	name
 	size
 	hash
-	sliceSize
-	encFile - false
-	encShard - true
-	publicKey
-	privateKey
-
-	name
-	size
-	hash
-	sliceSize
 	encFile
 	encShard
 
 	sliceCount
+	sliceSize
+	duplicate
+	shardList
  */
 Raid2X.prototype.getMeta = function() {
 	var meta = {};
