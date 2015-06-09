@@ -5,11 +5,30 @@ var fs = require('fs');
 var util= require('util');
 
 var Raid2X = require('./index.js');
+var option = {
+	"name": "test.file.exe"
+};
+var r2x = new Raid2X(option), r2x1;
+r2x.readFile("/Users/isuntv-e3/Documents/workspace/resources/test.file.exe", function(e,d) {
+r2x1 = new Raid2X(r2x.getMeta());
+});
+r2x1.importShard(r2x.getShard(0));
+r2x1.importShard(r2x.getShard(89));
+
+var shard;
+while(shard = r2x.nextShard()) { r2x1.importShard(shard); }
+
+var Raid2X = require('./index.js');
 var keyPair = Raid2X.genKey({b:512});
-var r2x = new Raid2X();
+var r2x = new Raid2X(), r2x1;
 r2x.setPrivateKey(keyPair.private);
-r2x.readFile('/Users/isuntv-e3/Documents/workspace/resources/test.file.exe', function(e, d) {var iii = 0; while(r2x.nextShard()) {console.log(++iii)}});
-r2x.getMeta();
+r2x.readFile('/Users/isuntv-e3/Documents/workspace/resources/test.file.exe', function(e, d) {
+r2x1 = new Raid2X(r2x.getMeta());
+});
+
+
+
+
 
 var keyPair = Raid2X.genKey();
 var key = new RSA();
@@ -123,7 +142,7 @@ Raid2X.genKey = function(length) {
 	keypair.public = key.exportKey('pkcs8-public-string');
 
 	return keypair;
-}
+};
 
 Raid2X.prototype.init = function(data) {
 	var self = this;
@@ -136,6 +155,8 @@ Raid2X.prototype.init = function(data) {
 	this.attr.encFile = false;
 	this.attr.duplicate = false;
 	this.shards = [];
+	this.uploads = [];
+	this.lost = [];
 	this.shardList = [];
 	this.key = new RSA();
 
@@ -143,12 +164,12 @@ Raid2X.prototype.init = function(data) {
 
 	if(util.isBuffer(data)) {
 	// with buffer
-		this.readBuffer(data, function() {});
+		this.readBuffer(data);
 	}
 	else if(util.isString(data)) {
 	// with file path
 		var buffer = fs.readFileSync(data);
-		this.readBuffer(buffer, function() {});
+		this.readBuffer(buffer);
 	}
 	else if(util.isObject(data)) {
 	// with metadata
@@ -158,11 +179,10 @@ Raid2X.prototype.init = function(data) {
 	return true;
 };
 
-Raid2X.prototype.readBuffer = function(buffer, callback) {
+Raid2X.prototype.readBuffer = function(buffer) {
 	this.binary = buffer;
 	this.attr.size = buffer.length;
 	this.parseFile();
-	callback(false, this.attr.size);
 
 	return this.attr.size;
 };
@@ -173,18 +193,53 @@ Raid2X.prototype.readFile = function(path, callback) {
 			callback(e);
 		}
 		else {
-			self.binary = d;
-			self.attr.size = d.length;
-			self.parseFile();
-			callback(e, self.attr.size);
+			callback(e, self.readBuffer(d));
 		}
 	});
 };
 Raid2X.prototype.readBase64 = function(base64) {
 	var buffer = new Buffer(base64, 'base64');
-	this.readBuffer(buffer, function() {});
+	return this.readBuffer(buffer);
 };
 
+Raid2X.prototype.importShard = function(data) {
+	if(util.isBuffer(data)) {
+	// with buffer
+		return this.importBuffer(data);
+	}
+	else if(util.isString(data)) {
+	// with base64
+		return this.importBase64(buffer);
+	}
+};
+
+Raid2X.prototype.importBuffer = function(buffer) {
+	var hash = this.genHash(buffer);
+	var index = this.shardList.indexOf(hash);
+	if(index > -1) {
+		this.shards[index] = buffer;
+		return this.done(hash);
+	}
+
+	return this.getProgress();
+};
+
+Raid2X.prototype.importFile = function(path) {
+	var self = this;
+	fs.readFile(path, function(e, d) {
+		if(e) {
+			callback(e);
+		}
+		else {
+			callback(e, self.importBuffer(d));
+		}
+	});
+}
+
+Raid2X.prototype.importBase64 = function(base64) {
+	var buffer = new Buffer(base64, 'base64');
+	return this.importBuffer(buffer);
+};
 
 /*
 	name
@@ -207,6 +262,7 @@ Raid2X.prototype.set = function(option) {
 	this.setName(option.name);
 	this.setSize(option.size);
 	this.setHash(option.hash);
+	this.setShardList(option.shardList);
 
 	return true;
 };
@@ -225,15 +281,26 @@ Raid2X.prototype.setSliceCount = function(count) {
 	return true;
 };
 Raid2X.prototype.setEncFile = function(bool) {
-	if(!util.isUndefined(bool)) {
+	if(!util.isUndefined(bool) && !bool == this.attr.encFile) {
 		this.attr.encFile = !!bool;
+
+		if(this.attr.encFile) {
+			this.binary = this.encrypt(this.binary);
+		}
+		else {
+			this.binary = this.decrypt(this.binary);
+		}
+		this.setHash();
+		this.resetShard();
 	}
 
 	return true;
 };
 Raid2X.prototype.setEncShard = function(bool) {
-	if(!util.isUndefined(bool)) {
+	if(!util.isUndefined(bool) && !bool == this.attr.encShard) {
 		this.attr.encShard = !!bool;
+
+		this.resetShard();
 	}
 
 	return true;
@@ -282,6 +349,40 @@ Raid2X.prototype.setHash = function(hash) {
 
 	return true;
 };
+Raid2X.prototype.setShardList = function(list) {
+	if(util.isArray(list)) {
+		this.shardList = list;
+		return true;
+	}
+	else {
+		return false;
+	}
+};
+
+Raid2X.prototype.encrypt = function(buffer) {
+	var rs;
+	try {
+		rs = this.key.encrypt(buffer);
+	}
+	catch(e) {
+		rs = buffer;
+	}
+	finally {
+		return rs;
+	}
+}
+Raid2X.prototype.decrypt = function(buffer) {
+	var rs;
+	try {
+		rs = this.key.decrypt(buffer);
+	}
+	catch(e) {
+		rs = buffer;
+	}
+	finally {
+		return rs;
+	}
+}
 
 /*
 	name
@@ -293,7 +394,7 @@ Raid2X.prototype.setHash = function(hash) {
 	sliceCount
 	sliceSize
 	duplicate
-	shardsList
+	shardList
  */
 Raid2X.prototype.getMeta = function() {
 	var meta = {};
@@ -334,8 +435,18 @@ Raid2X.prototype.parseFile = function() {
 
 	this.resetShard();
 };
+Raid2X.prototype.checkShard = function() {
+	if(!util.isArray(this.shardList) || this.shardList.length == 0) { return false; }
+
+	for(var i = 0; i < this.shardList.length; i++) {
+		if(util.isUndefined(this.shardList[i])) { return false; }
+	}
+
+	return true;
+};
 Raid2X.prototype.resetShard = function() {
 	this.shards = new Array(this.attr.sliceCount * 2);
+	this.uploads = new Array(this.attr.sliceCount * 2);
 	this.shardList = new Array(this.attr.sliceCount * 2);
 	this.pointer = 0;
 };
@@ -349,13 +460,16 @@ Raid2X.prototype.getSliceDetail = function() {
 
 	return detail;
 };
-Raid2X.prototype.getShardList = function() {
-	this.shardList = new Array(this.attr.sliceCount * 2);
-	if(util.isBuffer(this.binary)) {
-		for(var i = 0; i < this.attr.sliceCount * 2; i++) {
-			this.shardList[i] = this.genHash(this.getShard(i));
+Raid2X.prototype.getShardList = function(reset) {
+	if(reset || !this.checkShard()) {
+		this.shardList = new Array(this.attr.sliceCount * 2);
+		if(util.isBuffer(this.binary)) {
+			for(var i = 0; i < this.attr.sliceCount * 2; i++) {
+				this.shardList[i] = this.genHash(this.getShard(i));
+			}
 		}
 	}
+
 	return this.shardList;
 };
 Raid2X.prototype.genHash = function(buffer) {
@@ -363,8 +477,6 @@ Raid2X.prototype.genHash = function(buffer) {
 	var hash = SHA1(buffer) + CRC32(buffer);
 	return hash;
 };
-
-
 
 Raid2X.prototype.getShard = function(n, type) {
 	var shard;
@@ -386,7 +498,7 @@ Raid2X.prototype.getShard = function(n, type) {
 		tmpBinary.copy(shard, 0, n * this.attr.sliceSize, (n + 1) * this.attr.sliceSize);
 	}
 
-	if(this.attr.encShard) { shard = this.key.encrypt(shard); }
+	if(this.attr.encShard) { shard = this.encrypt(shard); }
 	switch(type) {
 		case 'base64':
 			shard = shard.toString('base64');
@@ -402,6 +514,113 @@ Raid2X.prototype.nextShard = function(type) {
 	if(this.pointer > this.attr.sliceCount * 2) { return false; }
 
 	return this.getShard(++this.pointer, type);
+};
+
+Raid2X.prototype.done = function(hash) {
+	if(this.shardList.indexOf(hash) > -1 && this.uploads.indexOf(hash) == -1) {
+		this.uploads.push(hash);
+		this.lost.splice(this.lost.indexOf(hash), 1);
+		this.fixWith(hash);
+	}
+
+	return this.getProgress();
+};
+Raid2X.prototype.failed = function(hash) {
+	this.uploads.splice(this.uploads.indexOf(hash) , 1);
+
+	return this.getProgress();
+};
+Raid2X.prototype.gone = function(hash) {
+	if(this.shardList.indexOf(hash) > -1 && this.done.indexOf(hash) == -1 && this.lost.indexOf(hash) == -1) {
+		this.lost.push(hash);
+	}
+
+	return this.getProgress();
+};
+Raid2X.prototype.getProgress = function() {
+	if(this.attr.duplicate) { return this.uploads.length > 0? 1: 0; }
+
+	var complete = 0;
+	for(var i = 0; i < this.attr.sliceCount; i++) {
+		if(this.uploads.indexOf( this.shardList[i] ) > -1) { complete++; }
+	}
+
+	return (complete / this.attr.sliceCount) || 0;
+};
+
+Raid2X.prototype.recovery = function() {
+	if(this.getProgress() < 1) { return false; }
+
+	var buffer = new Buffer(this.attr.size);
+	var tmpbuffer;
+
+	if(this.attr.duplicate) {
+		var i = this.shardList.indexOf(this.uploads[0]);
+		tmpbuffer = this.attr.encShard? this.key.decrypt(this.shards[i]): this.shards[i];
+		tmpbuffer.copy(buffer, 0);
+	}
+	else {
+		for(var i = 0; i < this.attr.sliceCount; i++) {
+			tmpbuffer = this.attr.encShard? this.key.decrypt(this.shards[i]): this.shards[i];
+			tmpbuffer.copy(buffer, i * this.attr.sliceSize);
+		}
+	}
+
+	this.binary = buffer;
+	return true;
+};
+Raid2X.prototype.fixWith = function(hash) {
+	if(this.attr.duplicate) { return true; }
+
+	var index = this.shardList.indexOf(hash);
+	var b1 = this.shards[index], b2, b3;
+	var n = this.attr.sliceCount;
+	var groups = [];
+
+	if(index < this.attr.sliceCount) {
+		var p1 = index + 2;
+		var c1 = index + n;
+		groups.push([this.shardList[p1], this.shardList[c1]]);
+
+		var p2 = (index + n - 2) % n;
+		var c2 = p2 + n;
+		groups.push([this.shardList[p2], this.shardList[c2]]);
+	}
+	else {
+		var p1 = index - n;
+		var p2 = (index + 2) % n;
+		groups.push([this.shardList[p1], this.shardList[p2]]);
+	}
+
+	for(var k in groups) {
+		// no need to fix check buffer
+		if(this.uploads.indexOf(groups[k][0]) > -1 && this.uploads.indexOf(groups[k][1]) == -1 && index >= this.attr.sliceCount) {
+			b2 = this.shards[ this.shardList.indexOf(groups[k][0]) ];
+			b3 = XOR(b1, b2);
+			this.importBuffer(b3);
+		}
+
+		if(this.uploads.indexOf(groups[k][1]) > -1 && this.uploads.indexOf(groups[k][0]) == -1) {
+			b2 = this.shards[ this.shardList.indexOf(groups[k][1]) ];
+			b3 = XOR(b1, b2);
+			this.importBuffer(b3);
+		}
+	}
+};
+Raid2X.prototype.getDownloadPlan = function() {
+
+};
+
+
+Raid2X.prototype.toBinary = function() {
+	if(!!this.binary || this.recovery()) {
+		return this.binary;
+	}
+};
+Raid2X.prototype.toBase64 = function() {
+	if(!!this.binary || this.recovery()) {
+		return this.binary.toString('base64');
+	}
 };
 
 module.exports = Raid2X;
