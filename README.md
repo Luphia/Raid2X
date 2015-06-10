@@ -17,6 +17,7 @@ var Raid2X = require("raid2x");
 var r2x = new Raid2X([options]);
 ```
 * options - {Buffer|File path|Metadata}
+
 ### Metadata
 You can also export the Metadata from an exist Raid2X over r2x.getMeta()
 *	name - [String] name of original file
