@@ -6,12 +6,13 @@ A Software Raid Algorithm
 * File would be divided into 2N parts (N mod 2 = 1)，and could be recovery by only N + 1 parts
 
 ## Installing
-```code
+```shell
 npm install raid2x
 ```
+> <sub>Requires nodejs >= 0.10.x</sub>
 
 ## Usage
-```code
+```javascript
 var Raid2X = require("raid2x");
 var r2x = new Raid2X([options]);
 ```
