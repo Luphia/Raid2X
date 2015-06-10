@@ -262,6 +262,7 @@ Raid2X.prototype.set = function(option) {
 	this.setSize(option.size);
 	this.setHash(option.hash);
 	this.setShardList(option.shardList);
+	this.setDuplicate(option.duplicate);
 
 	return true;
 };
@@ -356,6 +357,13 @@ Raid2X.prototype.setShardList = function(list) {
 	else {
 		return false;
 	}
+};
+Raid2X.prototype.setDuplicate = function(bool) {
+	if(!util.isUndefined(bool) && !bool == this.attr.duplicate) {
+		this.attr.duplicate = !!bool;
+	}
+
+	return true;
 };
 
 Raid2X.prototype.encrypt = function(buffer) {
