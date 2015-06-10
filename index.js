@@ -5,15 +5,14 @@ var fs = require('fs');
 var util= require('util');
 
 var Raid2X = require('./index.js');
-var option = {
-	"name": "test.file.exe"
-};
+var option = {"name": "test.file.exe"};
 var r2x = new Raid2X(option), r2x1;
 r2x.readFile("/Users/isuntv-e3/Documents/workspace/resources/test.file.exe", function(e,d) {
 r2x1 = new Raid2X(r2x.getMeta());
+for(var i=0;i<r2x.shards.length; i++) { if(i % 2 == 0 || i == r2x.attr.sliceCount) r2x1.importShard(r2x.getShard(i)) }
+if(r2x1.toBase64() == r2x.toBase64()) { console.log("recovery with 0.5n + 1 shards"); }
 });
-r2x1.importShard(r2x.getShard(0));
-r2x1.importShard(r2x.getShard(89));
+
 
 var shard;
 while(shard = r2x.nextShard()) { r2x1.importShard(shard); }
@@ -493,8 +492,8 @@ Raid2X.prototype.getShard = function(n, type) {
 		shard = XOR(this.getShard(p1), this.getShard(p2));
 	}
 	else {
-		var tmpBinary = Buffer.concat([this.binary, new Buffer(this.attr.sliceSize)]);
-		shard = new Buffer(this.attr.sliceSize);
+		var tmpBinary = Buffer.concat([this.binary, new Buffer(this.attr.sliceSize).fill(0)]);
+		shard = new Buffer(this.attr.sliceSize).fill(0);
 		tmpBinary.copy(shard, 0, n * this.attr.sliceSize, (n + 1) * this.attr.sliceSize);
 	}
 
@@ -551,7 +550,7 @@ Raid2X.prototype.getProgress = function() {
 Raid2X.prototype.recovery = function() {
 	if(this.getProgress() < 1) { return false; }
 
-	var buffer = new Buffer(this.attr.size);
+	var buffer = new Buffer(this.attr.size).fill(0);
 	var tmpbuffer;
 
 	if(this.attr.duplicate) {
