@@ -76,7 +76,7 @@ if(recovery.toBase64() == r2x.toBase64()) { console.log("recovery file with %d s
 else { console.log("recovery failed :("); }
 ```
 
-### Get a single shard / Import a shard
+### Get a shard / Import a shard
 ```javascript
 var sample = new Raid2X(metadata);
 var n = 0;
