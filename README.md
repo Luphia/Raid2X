@@ -67,7 +67,7 @@ while(shard = r2x.nextShard()) {
 var recovery = new Raid2X(metadata);
 for(var i = 0; i < metadata.shardList.length; i++) {
   if(i % 2 == 0 || i == r2x.attr.sliceCount) {
-    r2x1.importShard(r2x.getShard(i));
+    recovery.importShard(r2x.getShard(i));
   }
 }
 
