@@ -11,12 +11,15 @@
 
 <script>
   var files = [];
+  var meta = [];
   function handleFileSelect(evt) {
     evt.target.files; // FileList object
     for(var k in evt.target.files) {
       if(new String(evt.target.files[k]) != "[object File]") { continue; }
       var r2x = new Raid2X();
-      r2x.readFile(evt.target.files[k], function() {});
+      r2x.readFile(evt.target.files[k], function(e, r) {
+        meta.push(r.getMeta());
+      });
       files.push(r2x);
     }
 

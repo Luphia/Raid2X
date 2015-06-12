@@ -192,7 +192,8 @@ Raid2X.prototype.readFile = function(path, callback) {
 			callback(e);
 		}
 		else {
-			callback(e, self.readBuffer(d));
+			self.readBuffer(d);
+			callback(e, self);
 		}
 	});
 };
