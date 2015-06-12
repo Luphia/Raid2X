@@ -101,3 +101,5 @@ var writeStream = fs.createWriteStream('myBinaryFile');
 writeStream.write(bufferFile);
 writeStream.end();
 ```
+
+## Usage in the Web
