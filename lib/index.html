@@ -29,7 +29,14 @@
       files.push(r2x);
     }
     document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
-  }
+  };
+
+  function showVideo(r2x) {
+    var video = document.createElement('video');
+    video.setAttribute("src", window.URL.createObjectURL(vid));
+    video.setAttribute("controls", "");
+    video.setAttribute("autoplay", "");
+  };
 
   document.getElementById('files').addEventListener('change', handleFileSelect, false);
 </script>
