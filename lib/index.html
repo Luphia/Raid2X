@@ -1,7 +1,6 @@
 <html>
 <header>
-	<script type="text/javascript" src="jsencrypt.js"></script>
-	<script type="text/javascript" src="rusha.js"></script>
+  <script type="text/javascript" src="forge.min.js"></script>
 	<script type="text/javascript" src="raid2x.js"></script>
 </header>
 
@@ -10,6 +9,8 @@
 <output id="list"></output>
 
 <script>
+
+
   var files = [];
   var meta = [];
   function handleFileSelect(evt) {
@@ -22,13 +23,20 @@
                   '</li>');
 
       if(new String(f) != "[object File]") { continue; }
+      var worker = new Worker('worker.js');
+      worker.onmessage= function(e) {console.log(e);}
+      worker.postMessage([f]);
+      /*
       var r2x = new Raid2X();
       r2x.readFile(f, function(e, r) {
-        meta.push(r.getMeta());
+        //meta.push(r.getMeta());
+        console.log('Yo');
       });
       files.push(r2x);
+      */
     }
     document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+
   };
 
   function showVideo(r2x) {

@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/Luphia/Raid2X#readme",
   "dependencies": {
+    "forge": "^2.3.0",
     "node-rsa": "^0.2.23"
   }
 }
