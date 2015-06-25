@@ -25,15 +25,16 @@
       if(new String(f) != "[object File]") { continue; }
       var worker = new Worker('worker.js');
       worker.onmessage= function(e) {console.log(e);}
+      //files.push(f);
       //worker.postMessage([f]);
-      
+
       var r2x = new Raid2X();
       r2x.readFile(f, function(e, r) {
         //meta.push(r.getMeta());
         console.log('Yo');
       });
       files.push(r2x);
-      
+
     }
     document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
 
