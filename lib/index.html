@@ -10,12 +10,13 @@
 <button>Click</button>
 <script>
 
-
+  var f;
   var files = [];
   var meta = [];
   function handleFileSelect(evt) {
     // files is a FileList of File objects. List some properties.
     var output = [];
+    var s = new Date();
     for (var i = 0, f; f = evt.target.files[i]; i++) {
       output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
                   f.size, ' bytes, last modified: ',
@@ -32,9 +33,10 @@
       r2x.readFile(f, function(e, r) {
         //meta.push(r.getMeta());
         console.log(r.getMeta());
+        console.log("cost: %d", new Date() - s);
       });
       files.push(r2x);
-
+      f = r2x;
     }
     document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
 
