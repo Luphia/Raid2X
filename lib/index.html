@@ -7,7 +7,7 @@
 <body>
 <input type="file" id="files" name="files[]" multiple />
 <output id="list"></output>
-<button>Click</button>
+<button id="video">Click</button>
 <script>
 
   var f;
@@ -32,23 +32,28 @@
       var r2x = new Raid2X();
       r2x.readFile(f, function(e, r) {
         //meta.push(r.getMeta());
-        console.log(r.getMeta());
+        console.log(r.getMeta(true));
         console.log("cost: %d", new Date() - s);
+        showVideo();
       });
       files.push(r2x);
       f = r2x;
     }
     document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
-
   };
 
   function showVideo(r2x) {
+    r2x = files[0];
+    var copy = new Raid2X(r2x.getMeta(true));
+    while(copy.importShard(r2x.nextShard()) < 1) {  }
+
     var video = document.createElement('video');
-    video.setAttribute("src", window.URL.createObjectURL(vid));
+    video.setAttribute("src", copy.toURL());
     video.setAttribute("controls", "");
     video.setAttribute("autoplay", "");
+    document.body.appendChild(video);
   };
-
+  document.getElementById('video').addEventListener('click', showVideo, false);
   document.getElementById('files').addEventListener('change', handleFileSelect, false);
 </script>
 </body>
