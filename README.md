@@ -1,7 +1,7 @@
 Raid2X
 =======
-[![Build Status](https://travis-ci.org/sergeyksv/Raid2X.png?branch=master)](https://travis-ci.org/sergeyksv/Raid2X)
-[![Deps Status](https://david-dm.org/sergeyksv/Raid2X.png)](https://david-dm.org/sergeyksv/Raid2X)
+[![Build Status](https://travis-ci.org/luphia/Raid2X.png?branch=master)](https://travis-ci.org/luphia/Raid2X)
+[![Deps Status](https://david-dm.org/luphia/Raid2X.png)](https://david-dm.org/luphia/Raid2X)
 
 **Raid2X** is a software raid algorithm
 * Pure JavaScript
