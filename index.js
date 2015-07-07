@@ -215,10 +215,19 @@ Raid2X.prototype.importShard = function(data) {
 };
 
 Raid2X.prototype.importBuffer = function(buffer) {
-	var hash = this.genHash(buffer);
-	var index = this.shardList.indexOf(hash);
+	this.binary = !this.binary? new Buffer(this.attr.size): this.binary;
+
+	var info = this.readShardInfo(buffer);
+	var index = info[0];
+	var hash = this.shardList[index] || index;
+
+	buffer = buffer.slice(0, this.attr.sliceSize);
+	var d = index * this.attr.sliceSize;
+	var s = 0;
+	var e = (d + this.attr.sliceSize > this.attr.size)? this.attr.size - d: this.attr.sliceSize;
+
 	if(index > -1) {
-		this.shards[index] = buffer;
+		buffer.copy(this.binary, d, s, e);
 		return this.done(hash);
 	}
 
@@ -454,7 +463,6 @@ Raid2X.prototype.checkShard = function() {
 	return true;
 };
 Raid2X.prototype.resetShard = function() {
-	this.shards = new Array(this.attr.sliceCount * 2);
 	this.uploads = new Array(this.attr.sliceCount * 2);
 	this.shardList = new Array(this.attr.sliceCount * 2);
 	this.pointer = 0;
@@ -485,6 +493,23 @@ Raid2X.prototype.genHash = function(buffer) {
 // sha1 + crc32
 	var hash = SHA1(buffer) + CRC32(buffer);
 	return hash;
+};
+
+Raid2X.prototype.genShardInfo = function(n) {
+	if(!(n >= 0) || !(this.attr.sliceCount > 0)) { return false; }
+	return new Buffer(new Uint8Array( new Uint32Array([n, this.attr.sliceCount]).buffer ) );
+};
+Raid2X.prototype.readShardInfo = function(buffer) {
+	if(Buffer.isBuffer(buffer) || buffer.length < 8) { return false; }
+	var s = this.attr.sliceSize;
+	return [new Uint32Array( new Uint8Array(b.slice(s, s + 4)).buffer)[0], new Uint32Array( new Uint8Array(b.slice(s + 4, s + 8)).buffer)[0]];
+};
+
+Raid2X.prototype.genHashcash = function(n) {
+	return new Buffer();
+};
+Raid2X.prototype.readHashcash = function(buffer) {
+	return [];
 };
 
 Raid2X.prototype.getShard = function(n, type) {
@@ -572,23 +597,6 @@ Raid2X.prototype.getProgress = function() {
 
 Raid2X.prototype.recovery = function() {
 	if(this.getProgress() < 1) { return false; }
-
-	var buffer = new Buffer(this.attr.size).fill(0);
-	var tmpbuffer;
-
-	if(this.attr.duplicate) {
-		var i = this.shardList.indexOf(this.uploads[0]);
-		tmpbuffer = this.attr.encShard? this.key.decrypt(this.shards[i]): this.shards[i];
-		tmpbuffer.copy(buffer, 0);
-	}
-	else {
-		for(var i = 0; i < this.attr.sliceCount; i++) {
-			tmpbuffer = this.attr.encShard? this.key.decrypt(this.shards[i]): this.shards[i];
-			tmpbuffer.copy(buffer, i * this.attr.sliceSize);
-		}
-	}
-
-	this.binary = buffer;
 	return true;
 };
 Raid2X.prototype.fixWith = function(hash) {
@@ -617,13 +625,13 @@ Raid2X.prototype.fixWith = function(hash) {
 	for(var k in groups) {
 		// no need to fix check buffer
 		if(this.uploads.indexOf(groups[k][0]) > -1 && this.uploads.indexOf(groups[k][1]) == -1 && index >= this.attr.sliceCount) {
-			b2 = this.shards[ this.shardList.indexOf(groups[k][0]) ];
+			b2 = this.getShard( this.shardList.indexOf(groups[k][0]) ).slice(0, this.attr.sliceSize);
 			b3 = XOR(b1, b2);
 			this.importBuffer(b3);
 		}
 
 		if(this.uploads.indexOf(groups[k][1]) > -1 && this.uploads.indexOf(groups[k][0]) == -1) {
-			b2 = this.shards[ this.shardList.indexOf(groups[k][1]) ];
+			b2 = this.getShard( this.shardList.indexOf(groups[k][1]) ).slice(0, this.attr.sliceSize);
 			b3 = XOR(b1, b2);
 			this.importBuffer(b3);
 		}
