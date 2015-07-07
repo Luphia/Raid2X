@@ -59,9 +59,10 @@ var RSA = require('node-rsa')
 ,	crypto = require('crypto')
 ;
 
-var minSliceCount = 45;
+var duplicateCount = 5;
+var minSliceCount = 25;
 var minSize = 512;
-var defaultSize = 200 * 1024;
+var defaultSize = 4 * 1024 * 1024;
 var defaultKeySize = 2048;
 var defaultEncryption = 'RSA';
 var CRCTable = (function() {
@@ -487,18 +488,19 @@ Raid2X.prototype.genHash = function(buffer) {
 };
 
 Raid2X.prototype.getShard = function(n, type) {
-	var shard;
+	var shard, result;
 	n = parseInt(n);
 
 	if(!(n < this.attr.sliceCount * 2 && n >= 0)) { return false; }
 
 	if(this.attr.duplicate) {
-		shard = Buffer.concat([this.binary, new Buffer(n.toString())]);
+		shard = this.binary;
 	}
 	else if(n >= this.attr.sliceCount) {
 		var p1 = n - this.attr.sliceCount;
 		var p2 = (n - this.attr.sliceCount + 2) % this.attr.sliceCount;
 		shard = XOR(this.getShard(p1), this.getShard(p2));
+		shard = shard.slice(0, this.attr.sliceSize);
 	}
 	else {
 		var tmpBinary = Buffer.concat([this.binary, new Buffer(this.attr.sliceSize).fill(0)]);
@@ -507,16 +509,28 @@ Raid2X.prototype.getShard = function(n, type) {
 	}
 
 	if(this.attr.encShard) { shard = this.encrypt(shard); }
+
+	// Add shard info
+	var info = this.genShardInfo(n);
+	// Add hashcash
+	var hashcash = this.genHashcash(n);
+
+	var exportShard = new Buffer(this.attr.sliceSize + info.length + hashcash.length);
+	shard.copy(exportShard, 0);
+	info.copy(exportShard, this.attr.sliceSize);
+	hashcash.copy(exportShard, this.attr.sliceSize + info.length);
+
 	switch(type) {
 		case 'base64':
-			shard = shard.toString('base64');
+			result = exportShard.toString('base64');
 			break;
 
 		default:
+			result = exportShard;
 			break;
 	}
 
-	return shard;
+	return result;
 };
 Raid2X.prototype.nextShard = function(type) {
 	if(this.pointer > this.attr.sliceCount * 2) { return false; }
