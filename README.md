@@ -107,3 +107,27 @@ writeStream.end();
 ```
 
 ## Usage in the Web
+* upload somefile
+```javascript
+var r2x = new Raid2X();
+r2x.readFile(file, function() {
+  r2x.uploadAll(path, function(d) {
+    console.log(d);
+    if(d == 1) {
+      console.log("upload complete");
+    }
+  });
+});
+```
+
+* download somefile
+```javascript
+var r2x = new Raid2X(meta);
+r2x.downloadAll(path, function(d) {
+  console.log(d);
+  if(d == 1) {
+    // save to local
+    r2x.save();
+  }
+});
+```
