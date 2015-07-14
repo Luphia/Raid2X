@@ -244,7 +244,50 @@ Raid2X.prototype.importFile = function(path, callback) {
 			callback(e, self.importBuffer(d));
 		}
 	});
-}
+};
+
+Raid2X.prototype.importAllFile = function(path, callback) {
+	var todo = 1;
+	var done = function(e, d) {
+		todo--;
+
+		if(todo == 0) {
+			callback(false, d);
+		}
+	}
+
+	for(var i in this.shardList) {
+		todo++
+		filePath = path + this.shardList[i];
+		this.importFile(filePath, done);
+	}
+	done();
+};
+
+Raid2X.prototype.genCheckBuffer = function(path, callback) {
+	var n = this.attr.sliceCount;
+	var todo = 1;
+	var done = function(e, d) {
+		todo--;
+
+		if(todo == 0) {
+			callback(false, d);
+		}
+	};
+
+	for(var i = n; i < 2 * n; i++) {
+		var buffer = this.getShard(i);
+		var hash = this.genHash(buffer);
+		var filepath = "path" + hash;
+		this.shardList[i] = hash;
+
+		fs.writeFile(filePath, buffer, function(err) {
+			done();
+		}); 
+	}
+
+	done();
+};
 
 Raid2X.prototype.importBase64 = function(base64) {
 	var buffer = new Buffer(base64, 'base64');
