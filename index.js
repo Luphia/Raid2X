@@ -215,7 +215,7 @@ Raid2X.prototype.importShard = function(data) {
 };
 
 Raid2X.prototype.importBuffer = function(buffer) {
-	this.binary = !this.binary? new Buffer(this.attr.size): this.binary;
+	this.binary = !this.binary? new Buffer(this.attr.size).fill(0): this.binary;
 
 	var info = this.readShardInfo(buffer);
 	var index = info[0];
