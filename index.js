@@ -543,7 +543,7 @@ Raid2X.prototype.genShardInfo = function(n) {
 	return new Buffer(new Uint8Array( new Uint32Array([n, this.attr.sliceCount]).buffer ) );
 };
 Raid2X.prototype.readShardInfo = function(buffer) {
-	if(Buffer.isBuffer(buffer) || buffer.length < 8) { return false; }
+	if(!Buffer.isBuffer(buffer) || buffer.length < 8) { return false; }
 	var s = this.attr.sliceSize;
 	return [new Uint32Array( new Uint8Array(b.slice(s, s + 4)).buffer)[0], new Uint32Array( new Uint8Array(b.slice(s + 4, s + 8)).buffer)[0]];
 };
