@@ -278,7 +278,7 @@ Raid2X.prototype.genCheckBuffer = function(path, callback) {
 	for(var i = n; i < 2 * n; i++) {
 		var buffer = this.getShard(i);
 		var hash = this.genHash(buffer);
-		var filepath = "path" + hash;
+		var filePath = "path" + hash;
 		this.shardList[i] = hash;
 
 		fs.writeFile(filePath, buffer, function(err) {
@@ -549,7 +549,7 @@ Raid2X.prototype.readShardInfo = function(buffer) {
 };
 
 Raid2X.prototype.genHashcash = function(n) {
-	return new Buffer();
+	return new Buffer(0);
 };
 Raid2X.prototype.readHashcash = function(buffer) {
 	return [];
