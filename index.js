@@ -258,7 +258,7 @@ Raid2X.prototype.importAllFile = function(path, callback) {
 
 	for(var i in this.shardList) {
 		todo++
-		filePath = path + this.shardList[i];
+		var filePath = path + this.shardList[i];
 		this.importFile(filePath, done);
 	}
 	done();
@@ -278,7 +278,7 @@ Raid2X.prototype.genCheckBuffer = function(path, callback) {
 	for(var i = n; i < 2 * n; i++) {
 		var buffer = this.getShard(i);
 		var hash = this.genHash(buffer);
-		var filePath = "path" + hash;
+		var filePath = path + hash;
 		this.shardList[i] = hash;
 
 		fs.writeFile(filePath, buffer, function(err) {
