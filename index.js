@@ -85,7 +85,7 @@ var CRCTable = (function() {
 })();
 
 var XOR = function(buff1, buff2) {
-	if(!util.isBuffer(buff1) || !util.isBuffer(buff2)) { return false; }
+	if(!Buffer.isBuffer(buff1) || !Buffer.isBuffer(buff2)) { return false; }
 	if(buff2.length > buff1.length) { return XOR(buff2, buff1); }
 
 	var res = [];
@@ -99,7 +99,7 @@ var SHA1 = function(buffer) {
 };
 var CRC32 = function(buffer) {
 	var b, crc, i, len, code;
-	if(!util.isBuffer(buffer)) { buffer = new Buffer(new String(buffer)); }
+	if(!Buffer.isBuffer(buffer)) { buffer = new Buffer(new String(buffer)); }
 	if(buffer.length > 10000) return CRC32_8(buffer);
 
 	for(var crc = -1, i = 0, len = buffer.length - 3; i < len;) {
@@ -115,7 +115,7 @@ var CRC32 = function(buffer) {
 };
 var CRC32_8 = function(buffer) {
 	var b, crc, i, len, code;
-	if(!util.isBuffer(buffer)) { buffer = new Buffer(new String(buffer)); }
+	if(!Buffer.isBuffer(buffer)) { buffer = new Buffer(new String(buffer)); }
 
 	for(var crc = -1, i = 0, len = buffer.length - 7; i < len;) {
 		crc = (crc >>> 8) ^ CRCTable[(crc ^ buffer[i++]) & 0xFF];
@@ -162,16 +162,16 @@ Raid2X.prototype.init = function(data) {
 
 	this.pointer = 0;
 
-	if(util.isBuffer(data)) {
+	if(Buffer.isBuffer(data)) {
 	// with buffer
 		this.readBuffer(data);
 	}
-	else if(util.isString(data)) {
+	else if(typeof(data) == 'string') {
 	// with file path
 		var buffer = fs.readFileSync(data);
 		this.readBuffer(buffer);
 	}
-	else if(util.isObject(data)) {
+	else if(typeof(data) == 'object') {
 	// with metadata
 		this.set(data);
 	}
@@ -204,11 +204,11 @@ Raid2X.prototype.readBase64 = function(base64) {
 };
 
 Raid2X.prototype.importShard = function(data) {
-	if(util.isBuffer(data)) {
+	if(Buffer.isBuffer(data)) {
 	// with buffer
 		return this.importBuffer(data);
 	}
-	else if(util.isString(data)) {
+	else if(typeof(data) == 'string') {
 	// with base64
 		return this.importBase64(buffer);
 	}
@@ -304,7 +304,7 @@ Raid2X.prototype.importBase64 = function(base64) {
 	privateKey
  */
 Raid2X.prototype.set = function(option) {
-	if(!util.isObject(option)) { option = {}; }
+	if(typeof(option) != 'object') { option = {}; }
 	this.setSliceSize(option.sliceSize);
 	this.setSliceCount(option.sliceCount);
 	this.setEncFile(option.encFile);
@@ -335,7 +335,7 @@ Raid2X.prototype.setSliceCount = function(count) {
 	return true;
 };
 Raid2X.prototype.setEncFile = function(bool) {
-	if(!util.isUndefined(bool) && !bool == this.attr.encFile) {
+	if(typeof(bool) != 'undefined' && (!bool) == this.attr.encFile) {
 		this.attr.encFile = !!bool;
 
 		if(this.attr.encFile) {
@@ -351,7 +351,7 @@ Raid2X.prototype.setEncFile = function(bool) {
 	return true;
 };
 Raid2X.prototype.setEncShard = function(bool) {
-	if(!util.isUndefined(bool) && !bool == this.attr.encShard) {
+	if(typeof(bool) != 'undefined' && (!bool) == this.attr.encShard) {
 		this.attr.encShard = !!bool;
 
 		this.resetShard();
@@ -360,7 +360,7 @@ Raid2X.prototype.setEncShard = function(bool) {
 	return true;
 };
 Raid2X.prototype.setPublicKey = function(key) {
-	if(util.isString(key) && key.length > 0) {
+	if(typeof(key) == 'string' && key.length > 0) {
 		try{
 			this.key.importKey(key, 'pkcs1-public-string');
 		}
@@ -370,7 +370,7 @@ Raid2X.prototype.setPublicKey = function(key) {
 	return true;
 };
 Raid2X.prototype.setPrivateKey = function(key) {
-	if(util.isString(key) && key.length > 0) {
+	if(typeof(key) == 'string' && key.length > 0) {
 		try{
 			this.key.importKey(key, 'pkcs1-private-string');
 		}
@@ -380,7 +380,7 @@ Raid2X.prototype.setPrivateKey = function(key) {
 	return true;
 };
 Raid2X.prototype.setName = function(name) {
-	if(util.isString(name) && name.length > 0) {
+	if(typeof(name) == 'string' && name.length > 0) {
 		this.attr.name = name;
 	}
 
@@ -394,10 +394,10 @@ Raid2X.prototype.setSize = function(size) {
 	return true;
 };
 Raid2X.prototype.setHash = function(hash) {
-	if(util.isString(hash) && hash.length > 0) {
+	if(typeof(hash) == 'string' && hash.length > 0) {
 		this.attr.hash = hash;
 	}
-	else if(util.isBuffer(this.binary)) {
+	else if(Buffer.isBuffer(this.binary)) {
 		this.attr.hash = this.genHash(this.binary);
 	}
 
@@ -413,7 +413,7 @@ Raid2X.prototype.setShardList = function(list) {
 	}
 };
 Raid2X.prototype.setDuplicate = function(bool) {
-	if(!util.isUndefined(bool) && !bool == this.attr.duplicate) {
+	if(typeof(bool) != 'undefined' && (!bool) == this.attr.duplicate) {
 		this.attr.duplicate = !!bool;
 	}
 
@@ -500,7 +500,7 @@ Raid2X.prototype.checkShard = function() {
 	if(!util.isArray(this.shardList) || this.shardList.length == 0) { return false; }
 
 	for(var i = 0; i < this.shardList.length; i++) {
-		if(util.isUndefined(this.shardList[i])) { return false; }
+		if(typeof(this.shardList[i]) == 'undefined') { return false; }
 	}
 
 	return true;
@@ -523,7 +523,7 @@ Raid2X.prototype.getSliceDetail = function() {
 Raid2X.prototype.getShardList = function(reset) {
 	if(reset || !this.checkShard()) {
 		this.shardList = new Array(this.attr.sliceCount * 2);
-		if(util.isBuffer(this.binary)) {
+		if(Buffer.isBuffer(this.binary)) {
 			for(var i = 0; i < this.attr.sliceCount * 2; i++) {
 				this.shardList[i] = this.genHash(this.getShard(i));
 			}
