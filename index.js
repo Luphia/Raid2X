@@ -143,6 +143,7 @@ Raid2X.genKey = function(length) {
 
 	return keypair;
 };
+Raid2X.XOR = XOR;
 
 Raid2X.prototype.init = function(data) {
 	var self = this;
@@ -283,7 +284,7 @@ Raid2X.prototype.genCheckBuffer = function(path, callback) {
 
 		fs.writeFile(filePath, buffer, function(err) {
 			done();
-		}); 
+		});
 	}
 
 	done();
@@ -462,7 +463,7 @@ Raid2X.prototype.getMeta = function() {
 	meta.name = this.attr.name;
 	meta.size = this.attr.size;
 	meta.hash = this.attr.hash;
-	
+
 	meta.encFile = this.attr.encFile;
 	meta.encShard = this.attr.encShard;
 
