@@ -7,7 +7,7 @@ var util= require('util');
 var Raid2X = require('./index.js');
 var r2x = new Raid2X("/Users/luphia/Documents/Workspace/Playground/logo.png"), r2x1;
 r2x.setSliceSize(61440);
-var meta = r2x.getMeta(false);
+var meta = r2x.getMeta(true);
 
 r2x1 = new Raid2X(r2x.getMeta());
 for(var i=0;i<r2x.shards.length; i++) { if(i % 2 == 0 || i == r2x.attr.sliceCount) r2x1.importShard(r2x.getShard(i)) }
