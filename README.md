@@ -16,6 +16,20 @@ npm install raid2x
 > <sub>Requires nodejs >= 0.10.x</sub>
 
 ## Usage
+### Quick Test
+```javascript
+var Raid2X = require('raid2x');
+var filepath = "/Users/luphia/Documents/Workspace/Playground/logo.png";
+var distination = "/Users/luphia/Desktop/";
+var r2x = new Raid2X(filepath), r2x1, meta;
+r2x.setSliceSize(61440);
+meta = r2x.getMeta(true);
+r2x1 = new Raid2X(meta);
+for(var i = 0; i < meta.sliceCount; i++) {
+	r2x1.importShard(r2x.getShard(i));
+}
+r2x1.save(distination + meta.name);
+```
 ### Initial Raid2X
 ```javascript
 var Raid2X = require("raid2x");
