@@ -5,13 +5,13 @@ var fs = require('fs');
 var util= require('util');
 
 var Raid2X = require('./index.js');
-var option = {"name": "test.file.exe"};
-var r2x = new Raid2X(option), r2x1;
-r2x.readFile("/Users/isuntv-e3/Documents/workspace/resources/test.file.exe", function(e,d) {
+var r2x = new Raid2X("/Users/luphia/Documents/Workspace/Playground/logo.png"), r2x1;
+r2x.setSliceSize(61440);
+var meta = r2x.getMeta(false);
+
 r2x1 = new Raid2X(r2x.getMeta());
 for(var i=0;i<r2x.shards.length; i++) { if(i % 2 == 0 || i == r2x.attr.sliceCount) r2x1.importShard(r2x.getShard(i)) }
 if(r2x1.toBase64() == r2x.toBase64()) { console.log("recovery with 0.5n + 1 shards"); }
-});
 
 
 var shard;
@@ -53,14 +53,15 @@ Rebuild file
 
  */
 
-var RSA = require('node-rsa')
-,	fs = require('fs')
-,	util = require('util')
-,	crypto = require('crypto')
-;
+var RSA = require('node-rsa'),
+		fs = require('fs'),
+		util = require('util'),
+		path = require('path'),
+		textype = require('textype'),
+		crypto = require('crypto');
 
-var duplicateCount = 5;
-var minSliceCount = 25;
+var duplicateCount = 3;
+var minSliceCount = 1;
 var minSize = 512;
 var defaultSize = 4 * 1024 * 1024;
 var defaultKeySize = 2048;
@@ -170,7 +171,9 @@ Raid2X.prototype.init = function(data) {
 	else if(typeof(data) == 'string') {
 	// with file path
 		var buffer = fs.readFileSync(data);
+		var name = path.parse(data).base;
 		this.readBuffer(buffer);
+		this.setName(name);
 	}
 	else if(typeof(data) == 'object') {
 	// with metadata
@@ -187,14 +190,16 @@ Raid2X.prototype.readBuffer = function(buffer) {
 
 	return this.attr.size;
 };
-Raid2X.prototype.readFile = function(path, callback) {
+Raid2X.prototype.readFile = function(fp, callback) {
 	var self = this;
-	fs.readFile(path, function(e, d) {
+	var name = path.parse(fp).base;
+	fs.readFile(fp, function(e, d) {
 		if(e) {
 			callback(e);
 		}
 		else {
 			self.readBuffer(d);
+			self.setName(name);
 			callback(e, self);
 		}
 	});
@@ -226,7 +231,6 @@ Raid2X.prototype.importBuffer = function(buffer) {
 	var d = index * this.attr.sliceSize;
 	var s = 0;
 	var e = (d + this.attr.sliceSize > this.attr.size)? this.attr.size - d: this.attr.sliceSize;
-
 	if(index > -1) {
 		buffer.copy(this.binary, d, s, e);
 		return this.done(hash);
@@ -235,9 +239,9 @@ Raid2X.prototype.importBuffer = function(buffer) {
 	return this.getProgress();
 };
 
-Raid2X.prototype.importFile = function(path, callback) {
+Raid2X.prototype.importFile = function(fp, callback) {
 	var self = this;
-	fs.readFile(path, function(e, d) {
+	fs.readFile(fp, function(e, d) {
 		if(e) {
 			callback(e);
 		}
@@ -247,7 +251,7 @@ Raid2X.prototype.importFile = function(path, callback) {
 	});
 };
 
-Raid2X.prototype.importAllFile = function(path, callback) {
+Raid2X.prototype.importAllFile = function(fp, callback) {
 	var todo = 1;
 	var done = function(e, d) {
 		todo--;
@@ -259,13 +263,13 @@ Raid2X.prototype.importAllFile = function(path, callback) {
 
 	for(var i in this.shardList) {
 		todo++
-		var filePath = path + this.shardList[i];
+		var filePath = fp + this.shardList[i];
 		this.importFile(filePath, done);
 	}
 	done();
 };
 
-Raid2X.prototype.genCheckBuffer = function(path, callback) {
+Raid2X.prototype.genCheckBuffer = function(fp, callback) {
 	var n = this.attr.sliceCount;
 	var todo = 1;
 	var done = function(e, d) {
@@ -279,7 +283,7 @@ Raid2X.prototype.genCheckBuffer = function(path, callback) {
 	for(var i = n; i < 2 * n; i++) {
 		var buffer = this.getShard(i);
 		var hash = this.genHash(buffer);
-		var filePath = path + hash;
+		var filePath = fp + hash;
 		this.shardList[i] = hash;
 
 		fs.writeFile(filePath, buffer, function(err) {
@@ -324,6 +328,10 @@ Raid2X.prototype.set = function(option) {
 Raid2X.prototype.setSliceSize = function(size) {
 	if(size > 0) {
 		this.attr.sliceSize = size;
+		if(!this.attr.duplicate && this.attr.size > 0) {
+			this.attr.sliceCount = Math.ceil(this.attr.size / size);
+		}
+		this.resetShardList();
 	}
 
 	return true;
@@ -331,9 +339,16 @@ Raid2X.prototype.setSliceSize = function(size) {
 Raid2X.prototype.setSliceCount = function(count) {
 	if(count > minSliceCount) {
 		this.attr.sliceCount = count;
+		if(!this.attr.duplicate && this.attr.size > 0) {
+			this.attr.sliceSize = Math.ceil(this.attr.size / count);
+		}
+		this.resetShardList();
 	}
 
 	return true;
+};
+Raid2X.prototype.resetShardList = function () {
+	this.shardList = [];
 };
 Raid2X.prototype.setEncFile = function(bool) {
 	if(typeof(bool) != 'undefined' && (!bool) == this.attr.encFile) {
@@ -458,7 +473,7 @@ Raid2X.prototype.decrypt = function(buffer) {
 	duplicate
 	shardList
  */
-Raid2X.prototype.getMeta = function() {
+Raid2X.prototype.getMeta = function(skipHash) {
 	var meta = {};
 	meta.name = this.attr.name;
 	meta.size = this.attr.size;
@@ -467,11 +482,13 @@ Raid2X.prototype.getMeta = function() {
 	meta.encFile = this.attr.encFile;
 	meta.encShard = this.attr.encShard;
 
-	var sliceInfo = this.getSliceDetail();
+	var sliceInfo = this.getSliceDetail(skipHash);
 	meta.sliceCount = sliceInfo.sliceCount;
 	meta.sliceSize = sliceInfo.sliceSize;
-	meta.shardList = sliceInfo.shardList;
 	meta.duplicate = sliceInfo.duplicate;
+	if(!skipHash) {
+		meta.shardList = sliceInfo.shardList;
+	}
 
 	return meta;
 };
@@ -511,13 +528,15 @@ Raid2X.prototype.resetShard = function() {
 	this.shardList = new Array(this.attr.sliceCount * 2);
 	this.pointer = 0;
 };
-Raid2X.prototype.getSliceDetail = function() {
+Raid2X.prototype.getSliceDetail = function(skipHash) {
 	var detail = {};
 
 	detail.sliceCount = this.attr.sliceCount;
 	detail.sliceSize = this.attr.sliceSize;
 	detail.duplicate = this.attr.duplicate;
-	detail.shardList = this.getShardList();
+	if(!skipHash) {
+		detail.shardList = this.getShardList();
+	}
 
 	return detail;
 };
@@ -608,7 +627,8 @@ Raid2X.prototype.nextShard = function(type) {
 };
 
 Raid2X.prototype.done = function(hash) {
-	if(this.shardList.indexOf(hash) > -1 && this.uploads.indexOf(hash) == -1) {
+	var index = textype.isNumber(hash)? hash: this.shardList.indexOf(hash);
+	if(index > -1 && this.uploads.indexOf(hash) == -1) {
 		this.uploads.push(hash);
 		this.lost.splice(this.lost.indexOf(hash), 1);
 		this.fixWith(hash);
@@ -633,7 +653,14 @@ Raid2X.prototype.getProgress = function() {
 
 	var complete = 0;
 	for(var i = 0; i < this.attr.sliceCount; i++) {
-		if(this.uploads.indexOf( this.shardList[i] ) > -1) { complete++; }
+		var checkItem;
+		if((!this.shardList || this.shardList.length == 0)) {
+			checkItem = i;
+		}
+		else {
+			checkItem = this.shardList[i]
+		}
+		if(this.uploads.indexOf(checkItem) > -1) { complete++; }
 	}
 
 	return (complete / this.attr.sliceCount) || 0;
@@ -702,6 +729,9 @@ Raid2X.prototype.toBase64 = function() {
 	if(!!this.binary || this.recovery()) {
 		return this.binary.toString('base64');
 	}
+};
+Raid2X.prototype.save = function (filePath) {
+	fs.writeFile(filePath, this.toBinary(), function (err) {});
 };
 
 module.exports = Raid2X;
