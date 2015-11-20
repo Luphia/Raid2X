@@ -1,6 +1,6 @@
 {
   "name": "raid2x",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "A Software Raid Algorithm",
   "main": "index.js",
   "scripts": {

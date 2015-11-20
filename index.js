@@ -223,6 +223,7 @@ Raid2X.prototype.importShard = function(data) {
 
 Raid2X.prototype.importBuffer = function(buffer) {
 	this.binary = !this.binary? new Buffer(this.attr.size).fill(0): this.binary;
+	this.update = new Date() / 1;
 
 	var info = this.readShardInfo(buffer);
 	var index = info[0];
@@ -236,7 +237,6 @@ Raid2X.prototype.importBuffer = function(buffer) {
 		buffer.copy(this.binary, d, s, e);
 		return this.done(hash);
 	}
-	this.update = new Date() / 1;
 
 	return this.getProgress();
 };
