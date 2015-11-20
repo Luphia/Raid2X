@@ -711,10 +711,10 @@ Raid2X.prototype.fixWith = function(hash) {
 Raid2X.prototype.getDownloadPlan = function() {
 	var rs = [];
 	for(var i = 0; i < this.attr.sliceCount; i++) {
-		if(shardList.length > 0 && this.uploads.indexOf(this.shardList[i]) == -1) {
+		if(this.shardList.length > 0 && this.uploads.indexOf(this.shardList[i]) == -1) {
 			rs.push(this.shardList[i]);
 		}
-		if(shardList.length == 0 && this.uploads.indexOf(i) == -1) {
+		if(this.shardList.length == 0 && this.uploads.indexOf(i) == -1) {
 			rs.push(i);
 		}
 	}
