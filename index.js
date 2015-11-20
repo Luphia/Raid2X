@@ -161,6 +161,7 @@ Raid2X.prototype.init = function(data) {
 	this.lost = [];
 	this.shardList = [];
 	this.key = new RSA();
+	this.update = 0;
 
 	this.pointer = 0;
 
@@ -235,6 +236,7 @@ Raid2X.prototype.importBuffer = function(buffer) {
 		buffer.copy(this.binary, d, s, e);
 		return this.done(hash);
 	}
+	this.update = new Date() / 1;
 
 	return this.getProgress();
 };
