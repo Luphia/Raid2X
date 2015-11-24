@@ -63,7 +63,7 @@ var RSA = require('node-rsa'),
 var duplicateCount = 3;
 var minSliceCount = 1;
 var minSize = 512;
-var defaultSize = 4 * 1024 * 1024;
+var defaultSize = 4 * 1024 * 1024 - 8;
 var defaultKeySize = 2048;
 var defaultEncryption = 'RSA';
 var CRCTable = (function() {
@@ -737,6 +737,18 @@ Raid2X.prototype.toBase64 = function() {
 };
 Raid2X.prototype.save = function (filePath) {
 	fs.writeFile(filePath, this.toBinary(), function (err) {});
+};
+Raid2X.prototype.saveShards = function (fp, cb) {
+	var todo = this.attr.sliceCount;
+	var done = function () {
+		todo--;
+		if(todo == 0) { if(typeof(cb) == 'function') { cb(); } }
+	};
+	for(var i = 0; i < this.attr.sliceCount; i++) {
+		var shard = this.getShard(i);
+		var name = this.genHash(shard);
+		fs.writeFile(fp + name, shard, done);
+	}
 };
 
 module.exports = Raid2X;
