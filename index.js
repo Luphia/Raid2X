@@ -475,7 +475,7 @@ Raid2X.prototype.decrypt = function(buffer) {
 	duplicate
 	shardList
  */
-Raid2X.prototype.getMeta = function(skipHash) {
+Raid2X.prototype.getMeta = function(skipHash, checksum) {
 	var meta = {};
 	meta.name = this.attr.name;
 	meta.size = this.attr.size;
@@ -484,7 +484,7 @@ Raid2X.prototype.getMeta = function(skipHash) {
 	meta.encFile = this.attr.encFile;
 	meta.encShard = this.attr.encShard;
 
-	var sliceInfo = this.getSliceDetail(skipHash);
+	var sliceInfo = this.getSliceDetail(skipHash, checksum);
 	meta.sliceCount = sliceInfo.sliceCount;
 	meta.sliceSize = sliceInfo.sliceSize;
 	meta.duplicate = sliceInfo.duplicate;
@@ -530,23 +530,25 @@ Raid2X.prototype.resetShard = function() {
 	this.shardList = new Array(this.attr.sliceCount * 2);
 	this.pointer = 0;
 };
-Raid2X.prototype.getSliceDetail = function(skipHash) {
+Raid2X.prototype.getSliceDetail = function(skipHash, checksum) {
 	var detail = {};
 
 	detail.sliceCount = this.attr.sliceCount;
 	detail.sliceSize = this.attr.sliceSize;
 	detail.duplicate = this.attr.duplicate;
 	if(!skipHash) {
-		detail.shardList = this.getShardList();
+		detail.shardList = this.getShardList(false, checksum);
 	}
 
 	return detail;
 };
-Raid2X.prototype.getShardList = function(reset) {
+Raid2X.prototype.getShardList = function(reset, checksum) {
 	if(reset || !this.checkShard()) {
-		this.shardList = new Array(this.attr.sliceCount * 2);
+		checksum = dvalue.default(checksum, true);
+		var count = checksum? this.attr.sliceCount * 2: this.attr.sliceCount;
+		this.shardList = new Array(count);
 		if(Buffer.isBuffer(this.binary)) {
-			for(var i = 0; i < this.attr.sliceCount * 2; i++) {
+			for(var i = 0; i < count; i++) {
 				this.shardList[i] = this.genHash(this.getShard(i));
 			}
 		}
