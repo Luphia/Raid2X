@@ -54,6 +54,7 @@ Rebuild file
  */
 
 var RSA = require('node-rsa'),
+		dvalue = require('dvalue'),
 		fs = require('fs'),
 		util = require('util'),
 		path = require('path'),

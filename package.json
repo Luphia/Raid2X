@@ -1,6 +1,6 @@
 {
   "name": "raid2x",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "A Software Raid Algorithm",
   "main": "index.js",
   "scripts": {
@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/Luphia/Raid2X#readme",
   "dependencies": {
+    "dvalue": "^1.0.2",
     "forge": "^2.3.0",
     "node-rsa": "^0.2.23",
     "textype": "^1.0.3"
