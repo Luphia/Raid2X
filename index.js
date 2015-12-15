@@ -495,6 +495,19 @@ Raid2X.prototype.getMeta = function(skipHash, checksum) {
 
 	return meta;
 };
+Raid2X.prototype.get = function (attr) {
+	var rs;
+	switch(attr) {
+		case 'name':
+			rs = this.attr.name;
+			break;
+		case 'hash':
+			rs = this.attr.hash;
+			break;
+		default:
+	}
+	return rs;
+};
 Raid2X.prototype.parseFile = function() {
 	var sliceCount;
 	this.setHash();
