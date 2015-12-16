@@ -751,8 +751,10 @@ Raid2X.prototype.toBase64 = function() {
 		return this.binary.toString('base64');
 	}
 };
-Raid2X.prototype.save = function (filePath) {
-	fs.writeFile(filePath, this.toBinary(), function (err) {});
+Raid2X.prototype.save = function (filePath, cb) {
+	fs.writeFile(filePath, this.toBinary(), function (err) {
+		if(typeof(cb) == 'function') { cb(err); }
+	});
 };
 Raid2X.prototype.saveShards = function (fp, cb) {
 	var todo = this.attr.sliceCount;
