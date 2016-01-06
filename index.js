@@ -92,7 +92,7 @@ var XOR = function(buff1, buff2) {
 
 	var res = [];
 	for(var i = 0; i < buff1.length; i++) {
-		res.push(buff1[i] ^ buff2[i]);
+		res.push(buff1[i] ^ buff2[i % buff2.length]);
 	}
 	return new Buffer(res);
 };
